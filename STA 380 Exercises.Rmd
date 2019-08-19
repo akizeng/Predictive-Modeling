@@ -567,6 +567,9 @@ sort(clust$center[5,]*sigma + mu, decreasing = TRUE)[1:10]
 
 ```
 
+From this kind of clustering, we found that chatter, current events, travel, photo sharing, and politics appear to stand out in all of these first 3 clusters, but the difference is the number of posts. We can use this difference to classify the users. 
+But as there are so many categories in the dataset, we start to consider first extract principal components before clustering.
+
 ### Try 2: Clustering the users using principal components of the labeled categories
 
 #### Determine number of components and calculate the scores of each components for all the users
@@ -574,9 +577,9 @@ sort(clust$center[5,]*sigma + mu, decreasing = TRUE)[1:10]
 pca = prcomp(mydata)
 plot(cumsum(pca$sdev^2 / sum(pca$sdev^2)))
 summary(pca)
-score = pca$x[,1:18]
-pca$rotation[,1:3]
 ```
+
+We chose to use 18 components based on the cumulative proportion.
 
 #### Elbow Method for finding the optimal number of clusters
 ```{r}
@@ -593,14 +596,21 @@ plot(1:k.max, wss,
 
 #### Using k = 3
 ```{r}
-clust2 = kmeans(score, 5, nstart=50)
+clust2 = kmeans(score, 3, nstart=50)
 sort(clust2$center[1,],decreasing = TRUE)
 sort(clust2$center[2,],decreasing = TRUE)
 sort(clust2$center[3,],decreasing = TRUE)
-sort(clust2$center[4,],decreasing = TRUE)
-sort(clust2$center[5,],decreasing = TRUE)
+```
+
+We chose the most important component of this 3 clusters out and see what these component consist of.
 
 ```
+pca$rotation[,1:3]
+```
+
+The first cluster show their interest in indoor entertainment like tv, art, film, computer games and online gaming. Moreover, they also show interest in shopping, beauty and fashion.
+The second cluster show interest in personal health aspects like food, health nutrition, cooking and personal fitness.
+We can see the third cluster as ‘other’, since they do not show obvious preference.
 
 
 ## 5. Author Attribution
@@ -766,21 +776,28 @@ Our Naive Bayes model gives us an accuracy of 51%, which is 10% lower than what 
 library(arules)
 library(arulesViz)
 groceries = read.transactions('data/groceries.txt', sep=',')
-inspect(groceries[1:10])
 summary(itemFrequency(groceries))
 ```
+We got the overall distribution of item frequencies.
 
 ### (2) rules
+
+To start, we’ll use a support level of 0.3% which is the 1st quartile of the item frequency, and a confidence level of 30% because we want to focus only on those with high confidence.
+
 ```{r}
 groceriesrules = apriori(groceries, 
 	parameter=list(support=.003, confidence=.3, maxlen=5))
 plot(groceriesrules, measure = c("support", "lift"), shading = "confidence")
 plot(groceriesrules, method='two-key plot')
-inspect(subset(groceriesrules, subset=lift > 5))
 ```
 
 ### (3) Choose a subset
+
+We chose the rules with a lift value higher than 5 out, because those rules mean people who purchase lhs are 5 times more likely to purchase rhs than the typical consumer. These discoveries may be more useful to a retailer.
+For example, we found that people who have a purchase of instant food product are 11.4 times more likely to buy hamburger meat 64.3% of the time.
+
 ```{r}
 subsetrules = subset(groceriesrules, subset=lift > 5)
+inspect(subset(groceriesrules, subset=lift > 5))
 plot(subsetrules, method='graph')
 ```
