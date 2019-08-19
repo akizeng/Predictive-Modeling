@@ -1,7 +1,7 @@
-# Group members: Junhong Xu, Yeong-in Jang, Qingzi Zeng, Danyang Zhang
+## Group members: Junhong Xu, Yeong-in Jang, Qingzi Zeng, Danyang Zhang
 
 
-1. Green Buildings
+# 1. Green Buildings
 ------------------
 
     rm(list = ls())
@@ -248,7 +248,7 @@ financial move to build the green building. And our estiamte shows that
 we will recuperate the cost of green certification much faster than the
 original calcualtion.
 
-2. Flights at ABIA
+# 2. Flights at ABIA
 ------------------
 
     abia = read_csv('data/ABIA.csv')
@@ -375,7 +375,7 @@ weekend tent to be delayed more than weekdays.
 Even though there are a lot more delay in flights departing from Austin,
 you can also expect early arrival.
 
-3. Portfolio Modeling
+# 3. Portfolio Modeling
 ---------------------
 
     rm(list=ls())
@@ -565,7 +565,7 @@ small cap stocks. The 20-day 5% VaR is 92680.96.
 
 In conclusion, the risker the portfolio, the lower the 5% VaR will be.
 
-4. Market segmentation
+# 4. Market segmentation
 ----------------------
 
 ### Try 1: Clustering the users using all the labeled categories
@@ -796,7 +796,7 @@ We can see the third cluster as ‘other’, since they do not show obvious pref
 
     
 
-5. Author Attribution
+# 5. Author Attribution
 ---------------------
 
 ### (1) Read in all the text files and put them into traning and test set.
@@ -952,7 +952,7 @@ Our RandomForest model gives us an accuracy of 61.6%.
 Our Naive Bayes model gives us an accuracy of 51%, which is 10% lower
 than what we got from the randomforest model.
 
-6. Association rule mining
+# 6. Association rule mining
 --------------------------
 
 ### (1) Load data
