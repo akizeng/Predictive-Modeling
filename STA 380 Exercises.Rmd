@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
 ## 1. Green Buildings
 
-```{r setup, include=FALSE}
+```{r}
 rm(list = ls())
 library(ggplot2)
 library(tidyverse)
