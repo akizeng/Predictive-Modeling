@@ -674,6 +674,9 @@ In conclusion, the risker the portfolio, the lower the 5% VaR will be.
     ##         shopping         politics 
     ##         1.378161         1.240230
 
+From this kind of clustering, we found that chatter, current events, travel, photo sharing, and politics appear to stand out in all of these first 3 clusters, but the difference is the number of posts. We can use this difference to classify the users. 
+But as there are so many categories in the dataset, we start to consider first extract principal components before clustering.
+
 ### Try 2: Clustering the users using principal components of the labeled categories
 
 #### Determine number of components and calculate the scores of each components for all the users
@@ -711,9 +714,44 @@ In conclusion, the risker the portfolio, the lower the 5% VaR will be.
     ## Proportion of Variance 0.00957 0.0084 0.00652 0.00629 0.00532 0.00494
     ## Cumulative Proportion  0.96854 0.9769 0.98346 0.98974 0.99506 1.00000
 
-    score = pca$x[,1:18]
-    pca$rotation[,1:3]
+We chose to use 18 components based on the cumulative proportion.
 
+#### Elbow Method for finding the optimal number of clusters
+
+    set.seed(321)
+    # Compute and plot wss for k = 2 to k = 15.
+    k.max = 15
+    wss = sapply(1:k.max, 
+                  function(k){kmeans(score, k, nstart=50,iter.max = 15 )$tot.withinss})
+    plot(1:k.max, wss,
+         type="b", pch = 19, frame = FALSE, 
+         xlab="Number of clusters K",
+         ylab="Total within-clusters sum of squares")
+
+![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-30-1.png)
+
+#### Using k = 3
+
+    clust2 = kmeans(score, 3, nstart=50) 
+    sort(clust2$center[1,], decreasing = TRUE)[1]
+   
+    ##         PC2        
+    ## 1.660211050 
+    
+    sort(clust2$center[2,], decreasing = TRUE)[1]
+    
+    ##         PC3        
+    ##  0.82276453 
+    
+    sort(clust2$center[3,], decreasing = TRUE)[1]
+    
+    ##         PC1        
+    ## 1.2578535999
+
+We chose the most important component of this 3 clusters out and see what these component consist of.
+
+    pca$rotation[,1:3]
+    
     ##                          PC1          PC2          PC3
     ## chatter          -0.12599239  0.197225501 -0.074806851
     ## current_events   -0.09723669  0.064036499 -0.052239713
@@ -751,76 +789,12 @@ In conclusion, the risker the portfolio, the lower the 5% VaR will be.
     ## small_business   -0.11904181  0.094048059 -0.100597333
     ## spam             -0.01146092 -0.004551609 -0.012630747
     ## adult            -0.02673097 -0.006918154  0.002867189
+ 
+The first cluster show their interest in indoor entertainment like tv, art, film, computer games and online gaming. Moreover, they also show interest in shopping, beauty and fashion.
+The second cluster show interest in personal health aspects like food, health nutrition, cooking and personal fitness.
+We can see the third cluster as ‘other’, since they do not show obvious preference.
 
-#### Elbow Method for finding the optimal number of clusters
-
-    set.seed(321)
-    # Compute and plot wss for k = 2 to k = 15.
-    k.max = 15
-    wss = sapply(1:k.max, 
-                  function(k){kmeans(score, k, nstart=50,iter.max = 15 )$tot.withinss})
-    plot(1:k.max, wss,
-         type="b", pch = 19, frame = FALSE, 
-         xlab="Number of clusters K",
-         ylab="Total within-clusters sum of squares")
-
-![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-30-1.png)
-
-#### Using k = 3
-
-    clust2 = kmeans(score, 5, nstart=50)
-    sort(clust2$center[1,],decreasing = TRUE)
-
-    ##         PC2         PC4         PC7         PC3         PC6        PC10 
-    ##  1.91910440  1.30193782  0.19128433  0.09068325  0.08869048  0.08162983 
-    ##        PC17        PC15        PC14        PC18        PC13        PC12 
-    ##  0.03344569  0.01198922  0.00336858 -0.01100274 -0.01356872 -0.02514509 
-    ##        PC11        PC16         PC9         PC5         PC8         PC1 
-    ## -0.02819107 -0.04390968 -0.06004223 -0.11201350 -0.12839456 -1.30644692
-
-    sort(clust2$center[2,],decreasing = TRUE)
-
-    ##           PC3           PC2           PC5           PC6          PC16 
-    ##  1.5009782202  0.9868401819  0.9366915440  0.4540232715  0.1394963568 
-    ##           PC9           PC8          PC13          PC17          PC10 
-    ##  0.1147498162  0.1002416594  0.0351754766  0.0210703774  0.0008939465 
-    ##          PC12          PC11          PC18          PC14          PC15 
-    ## -0.0042436532 -0.0501858531 -0.0504370990 -0.0636328805 -0.1027513608 
-    ##           PC7           PC1           PC4 
-    ## -0.1877118388 -0.7884825471 -2.8232094743
-
-    sort(clust2$center[3,],decreasing = TRUE)
-
-    ##          PC3          PC4          PC8          PC9         PC16 
-    ##  0.948797686  0.750536535  0.296203928  0.108268706  0.047382682 
-    ##          PC6         PC14         PC11          PC7         PC12 
-    ##  0.047370217  0.046554276  0.030321929  0.022432437 -0.003521445 
-    ##         PC15         PC13         PC18         PC17         PC10 
-    ## -0.014156700 -0.042488299 -0.051924996 -0.081245626 -0.196365461 
-    ##          PC5          PC2          PC1 
-    ## -0.230778671 -3.040992883 -3.477438580
-
-    sort(clust2$center[4,],decreasing = TRUE)
-
-    ##         PC14          PC9         PC15         PC17         PC18 
-    ##  0.097166878  0.095659520  0.088994761  0.045927977  0.011041775 
-    ##         PC11         PC10         PC13         PC16         PC12 
-    ##  0.010708596  0.009655762 -0.011994016 -0.013676885 -0.057674941 
-    ##          PC2          PC8          PC5          PC7          PC6 
-    ## -0.168897351 -0.264622675 -0.351803109 -0.414278089 -0.787048895 
-    ##          PC1          PC4          PC3 
-    ## -1.194465093 -1.310417494 -3.662516018
-
-    sort(clust2$center[5,],decreasing = TRUE)
-
-    ##          PC1          PC4          PC3          PC7         PC18 
-    ##  1.417795100  0.213199117  0.069913469  0.034779361  0.021696387 
-    ##         PC12          PC8         PC11         PC13         PC15 
-    ##  0.019321804  0.013115287  0.013106614  0.006768995  0.005615007 
-    ##         PC10          PC6         PC17         PC14         PC16 
-    ##  0.004791936 -0.008548976 -0.008856809 -0.011557459 -0.020052657 
-    ##          PC9          PC5          PC2 
-    ## -0.037428184 -0.059585935 -0.303488817
+    
 
 5. Author Attribution
 ---------------------
@@ -986,46 +960,16 @@ than what we got from the randomforest model.
     library(arules)
     library(arulesViz)
     groceries = read.transactions('data/groceries.txt', sep=',')
-    inspect(groceries[1:10])
-
-    ##      items                     
-    ## [1]  {citrus fruit,            
-    ##       margarine,               
-    ##       ready soups,             
-    ##       semi-finished bread}     
-    ## [2]  {coffee,                  
-    ##       tropical fruit,          
-    ##       yogurt}                  
-    ## [3]  {whole milk}              
-    ## [4]  {cream cheese,            
-    ##       meat spreads,            
-    ##       pip fruit,               
-    ##       yogurt}                  
-    ## [5]  {condensed milk,          
-    ##       long life bakery product,
-    ##       other vegetables,        
-    ##       whole milk}              
-    ## [6]  {abrasive cleaner,        
-    ##       butter,                  
-    ##       rice,                    
-    ##       whole milk,              
-    ##       yogurt}                  
-    ## [7]  {rolls/buns}              
-    ## [8]  {bottled beer,            
-    ##       liquor (appetizer),      
-    ##       other vegetables,        
-    ##       rolls/buns,              
-    ##       UHT-milk}                
-    ## [9]  {pot plants}              
-    ## [10] {cereals,                 
-    ##       whole milk}
-
     summary(itemFrequency(groceries))
 
     ##      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
     ## 0.0001017 0.0038637 0.0104728 0.0260915 0.0310117 0.2555160
+    
+We got the overall distribution of item frequencies.
 
 ### (2) rules
+
+To start, we’ll use a support level of 0.3% which is the 1st quartile of the item frequency, and a confidence level of 30% because we want to focus only on those with high confidence.
 
     groceriesrules = apriori(groceries, 
         parameter=list(support=.003, confidence=.3, maxlen=5))
@@ -1066,6 +1010,13 @@ than what we got from the randomforest model.
 
 ![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-44-2.png)
 
+    
+### (3) Choose a subset
+
+We chose the rules with a lift value higher than 5 out, because those rules mean people who purchase lhs are 5 times more likely to purchase rhs than the typical consumer. These discoveries may be more useful to a retailer.
+For example, we found that people who have a purchase of instant food product are 11.4 times more likely to buy hamburger meat 64.3% of the time.
+
+    subsetrules = subset(groceriesrules, subset=lift > 5)
     inspect(subset(groceriesrules, subset=lift > 5))
 
     ##     lhs                        rhs                      support confidence      lift count
@@ -1086,9 +1037,6 @@ than what we got from the randomforest model.
     ##      tropical fruit,                                                                      
     ##      whole milk}            => {citrus fruit}       0.003152008  0.4492754  5.428284    31
 
-### (3) Choose a subset
-
-    subsetrules = subset(groceriesrules, subset=lift > 5)
     plot(subsetrules, method='graph')
 
 ![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-45-1.png)
