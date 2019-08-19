@@ -1,0 +1,787 @@
+---
+title: "STA380 Part2 Exercises"
+author: "Junhong Xu, Yeong-in Jang, Qingzi Zeng, Danyang Zhang"
+date: "19 August 2019"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+
+```
+
+## 1. Green Buildings
+
+```{r setup, include=FALSE}
+rm(list = ls())
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+raw_data = read_csv('data/greenbuildings.csv')
+```
+
+### Step 1: The Ecosystem
+
+We want to start with finding a list of building clusters with similar ecosystem to our building. We can do this by finidng building clusters that have similar weather and economy to Austin. Below are some information on Austin's climate and job growth rate.
+
+Austin job growth rate: ~3% in 2008
+
+Austin average annual precipitation: 35.9 (source: weather.gov)
+
+Average annual CDD in Austin: 3428 (source: weather.gov)
+
+Average annual HDD in Austin: 1413 (source: weather.gov)
+
+Variables of interest in this step: cd.total, hd.total, precipitation, empl.gr
+
+```{r }
+hist(raw_data$hd_total07)
+
+d1 = raw_data %>%
+  filter(hd_total07 <= 2000)
+
+```
+
+Looking at the histrogram for heating degree days (HDD), we can see that many of the buildings have high HDD, which indicates that the building clusters may locate in cities that have cold winters. Buildings in cold climates generally have very different costs associated with buildings in warmer climates. Building construction costs are higher due to the necesscity of insulation layers, energy consumption and utitlity costs can also be different too. For this reason, we do not think a building in colder climate such as Chicago, is comparable to a building in Austin. We will filter out the buildind clusters that have annual HDD greater than 2000. (the filtered dataset is called "d1")   
+
+```{r}
+hist(d1$empl_gr)
+
+d2 = d1 %>%
+  filter(empl_gr > 1 & empl_gr <=10)
+
+hist(d2$empl_gr)
+
+```
+
+From the above histogram we see some abnormal job growth rates such (greater than 60% & -20%). We decide to filter the building clusters out from the data. And since we know that Austin has always enjoyed a steady annual job growth rate of about 3% from 2007-2019, we also exclude building clusters that have less than 1% job growth rate. The new dataset is called "d2".
+
+
+
+### Step 2: The Building
+
+We want to find buildings in the building clusters that are similar to the building we want to build.
+
+What we know about our building:
+
+(1) It's a new building
+(2) It has 15 floors
+(3) It's a mixed use building
+(4) It's on Cesar Chavez, on the other side of I-35 across from downtown
+(5) It's going to be 250,000 square feet
+
+Variables of interest in this step: size, age, stories, renovated
+
+```{r }
+ggplot(data = d2) + 
+  geom_point(mapping = aes(x = stories, y = Rent))+
+  labs(title="Rent vs. stories")
+
+ggplot(data = d2) + 
+  geom_point(mapping = aes(x = size, y = Rent))+
+  labs(title="Rent vs. size")
+
+d2$renovated = as.factor(d2$renovated)
+
+ggplot(data = d2) + 
+  geom_point(mapping = aes(x = age, y = Rent, color = renovated))+
+  labs(title="Rent vs. age")
+
+```
+
+
+From the above graphs we see that there are still a lot of building left in our dataset, and we don't see a clear pattern.
+
+
+
+```{r}
+d3 = d2 %>%
+  filter(stories <= 20 & stories >= 10 & size > 100000 & size < 300000)
+
+ggplot(data = d3) + 
+  geom_point(mapping = aes(x = stories, y = Rent))+
+  labs(title="Rent vs. stories")
+
+ggplot(data = d3) + 
+  geom_point(mapping = aes(x = size, y = Rent)) +
+  labs(title="Rent vs. size")
+
+d3$green_rating = as.factor(d3$green_rating)
+
+ggplot(data = d3) + 
+  geom_point(mapping = aes(x = age, y = Rent, color = green_rating)) +
+  labs(title="Rent vs. age")
+
+```
+
+
+To find buildings that are similar to the one we are about to build, we limit the square foot size of the building to be between 100,000 and 300,000. And we further filter our the building that are too tall (>20 stories) and too short (<10 stories). The last graph shows that older buildings are more likely to not be green certified building. We don't see any other obvious patterns between rent and stories or size.     
+
+
+### Step 3: Green or no green?
+
+Should we build a green building or not?
+
+Variables of interest in this step: green_rating, LEED, Energystar
+
+
+```{r }
+d3$green_rating = as.factor(d3$green_rating)
+d3$LEED = as.factor(d3$LEED)
+d3$Energystar = as.factor(d3$Energystar)
+
+ggplot(data = d3) + 
+  geom_boxplot(mapping = aes(x = green_rating, y = Rent))+
+  labs(title="Effect of green (both LEED and Energystar) rating on rent")
+d3 %>%
+  group_by(green_rating) %>%
+  summarise(median(Rent))
+
+d3 %>%
+  group_by(green_rating) %>%
+  summarise(mean(Rent))
+
+
+
+ggplot(data = d3) + 
+  geom_boxplot(mapping = aes(x = green_rating, y = leasing_rate))+
+  labs(title="Effect of green (both LEED and Energystar) rating on leasing_rate")
+
+d3 %>%
+  group_by(green_rating) %>%
+  summarise(median(leasing_rate))
+
+d3 %>%
+  group_by(green_rating) %>%
+  summarise(mean(leasing_rate))
+
+```
+
+The rent for green building is slightly higher on average (30.1 vs. 33.6) than non-green certifified buildings. The green buildings also have a higher leasing rate at 91% than non-green (85%). When looking at the median, the difference between green and non-green building become more significant. The median rent for green building is 7 dollars more than non-green building. And the median leasing rate for green building is almost 5% more than non-green building.  
+
+
+```{r}
+
+ggplot(data = d3) + 
+  geom_point(mapping = aes(x = leasing_rate, y = Rent, color = green_rating)) +
+  labs(title="Leasing rate vs. Rent (Left: No Net contract, Right: Net contract)") + facet_grid(. ~ net)
+
+
+```
+
+In the above graph we explore the effect of whether or not having a net contract would affect the rent and leasing rate. There is no obvious pattern but we find that there are only five buildings in our filtered dataset that do net contracts. 
+
+
+
+### Step 4: Financial Consideration
+
+Cost and expected return:
+
+(1) The building has a baseline construction cost of $100 million
+(2) There is a 5% expected premium for the green certification
+
+
+```{r }
+hist(d3$Rent)
+hist(d3$leasing_rate)
+```
+
+We agree with the stats guru's argument that median is more robust than mean becasue it deals better with outliers. So, based on our previous analysis, the median market rent for green building is \$7 more than non-green building. This would give us \$250,000 x 7 = $1,750,000 of extra revenue per year if we build the green building.
+
+Keeping the construction costs the same at $100 million with a 5% expected premium for green certification, our extra cost will be recovered in \$5,000,000/1,750,000 =  2.86 years (35 months). If we assume a leasing rate of 90% (average leasing rate in our filtered dataset for green buildings), the extra cost will still be covered in 39 months.
+
+In conclusion, we support the stat guru's suggestion that it is a good financial move to build the green building. And our estiamte shows that we will recuperate the cost of green certification much faster than the original calcualtion. 
+
+
+## 2. Flights at ABIA
+
+
+```{r}
+abia = read_csv('data/ABIA.csv')
+abia = abia[,-1]
+abia$ElapsedDelay = abia$CRSElapsedTime - abia$ActualElapsedTime
+abia$TotalDelay = abia$ElapsedDelay + abia$ArrDelay + abia$DepDelay
+abia$depart = ifelse(abia$Origin=='AUS','Depart','Arrival')
+abia$early = ifelse(abia$TotalDelay<0,abia$TotalDelay,0)
+abia$delayed = ifelse(abia$TotalDelay>0,1,0)
+abia$Week = ifelse(abia$DayOfWeek<5,"Weekday","Weekend")
+```
+
+
+### 1) Delay by Airways
+
+```{r}
+prop = xtabs(~delayed + UniqueCarrier, data=abia) %>%
+  prop.table(margin=2)
+prop = as.data.frame(prop)
+prop = prop[prop$delayed==1,]
+prop$UniqueCarrier <- factor(prop$UniqueCarrier, levels = prop$UniqueCarrier[order(-prop$Freq)])
+ggplot(prop, aes(x=UniqueCarrier,y=Freq))+
+  geom_bar(stat="identity", fill="#FF9999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Proportion of delayed flight")
+```
+Atlantic Southeast Airlines(EV) has the highest delay rate with 53% followed by Southwest Airlines(WN) with 52%. US Airways(US) has the lowest delay rate with 22%.
+
+```{r}
+prop2 = xtabs(TotalDelay~UniqueCarrier , aggregate(TotalDelay~UniqueCarrier,abia,mean))
+prop2 = as.data.frame(prop2)
+prop2$UniqueCarrier <- factor(prop2$UniqueCarrier, levels = prop2$UniqueCarrier[order(-prop2$Freq)])
+ggplot(prop2, aes(x=UniqueCarrier,y=Freq))+
+  geom_bar(stat="identity", fill="#009999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Average delayed time")
+```
+Atlantic Southeast Airlines(EV) has also the highest average delay time with 33 minutes followed by Comair(oh) Airlines with 25 minutes. US Airways has the lowest average delay time with 2 minutes.
+
+
+### 2) Delay by Month
+
+```{r}
+prop = xtabs(~delayed + Month, data=abia) %>%
+  prop.table(margin=2)
+prop = as.data.frame(prop)
+prop = prop[prop$delayed==1,]
+prop$Month <- factor(prop$Month, levels = prop$Month[order(-prop$Freq)])
+ggplot(prop, aes(x=Month,y=Freq))+
+  geom_bar(stat="identity", fill="#FF9999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Proportion of delayed flight")
+```
+Months in vacation, which is December, March, June, have higher proportion of delayed flight. However, in fall season from September to November, the rate tend to be lower.
+
+```{r}
+prop = xtabs(TotalDelay~Month , aggregate(TotalDelay~Month,abia,mean))
+prop = as.data.frame(prop)
+prop$Month <- factor(prop$Month, levels = prop$Month[order(-prop$Freq)])
+ggplot(prop, aes(x=Month,y=Freq)) + geom_bar(stat="identity")+
+  geom_bar(stat="identity", fill="#009999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Average delayed time")
+```
+Similar to the proportion of delay flight, months in vacation, which is December, March, June, have higher delay time. However, in fall season from September to November, the delay time tend to be lower.
+
+
+### 3) Delay by Airport(Top 10)
+
+```{r}
+abia_depart = abia[which(abia$depart == 'Depart'),]
+prop = xtabs(~delayed + Dest, data=abia_depart) %>%
+  prop.table(margin=2)
+prop = as.data.frame(prop)
+prop = prop[prop$delayed==1,]
+prop$Dest <- factor(prop$Dest, levels = prop$Dest[order(-prop$Freq)])
+
+ggplot(na.omit(prop[1:10,]), aes(x=Dest,y=Freq))+
+  geom_bar(stat="identity", fill="#FF9999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Proportion of delayed flight")+
+  xlab("Destination")
+```
+Flight from Austin to Balitimore/Washington Airport has the highest delay rate with 53%. Nashville International Airport and Dallas Airport also have delay rate over 40%.
+
+
+```{r}
+prop = xtabs(TotalDelay~Dest, aggregate(TotalDelay~Dest,abia_depart,mean))
+prop = as.data.frame(prop)
+prop$Dest <- factor(prop$Dest, levels = prop$Dest[order(-prop$Freq)])
+prop = prop[which(prop$Freq>0),]
+ggplot(prop[1:10,], aes(x=Dest,y=Freq)) + geom_bar(stat="identity")+
+  geom_bar(stat="identity", fill="#009999", colour="black")+
+  geom_text(aes(label=round(Freq,2)), vjust=1.6, color="black",size=3.5)+
+  ylab("Average delayed time")+
+  xlab("Destination")
+```
+Flight from Austin to Atlanta has the longest average delay time with 21 minutes, and all other routes has less than 20 minutes of average delay time.
+
+
+### 4) Delay by DepartTime and Weekday/Weekend
+
+```{r}
+ggplot(data = abia) + 
+  geom_point(mapping = aes(x = DepTime, y = TotalDelay, color = Week))
+
+```
+Flights departing late night tend to be delayed more. Also, flights on weekend tent to be delayed more than weekdays.
+
+
+### 5) Early arrival by Airways
+
+```{r}
+ggplot(data = abia_depart) + 
+  geom_point(mapping = aes(x = UniqueCarrier, y = early), color='steelblue')
+```
+Even though there are a lot more delay in flights departing from Austin, you can also expect early arrival.
+
+
+
+## 3. Portfolio Modeling
+```{r, warning=FALSE, results="hide", message = FALSE}
+rm(list=ls())
+library(mosaic)
+library(quantmod)
+library(foreach)
+```
+
+
+### Portfolio 1 - Safe
+1 Money market:
+
+IBDC: iShares iBonds Mar 2020 Corporate ETF
+
+
+3 Government Bonds:
+
+SHV: iShares Short Treasury Bond ETF
+
+SHY: iShares 1-3 Year Treasury Bond ETF
+
+ZROZ: PIMCO 25+ Year Zero Coupon US Treasury Index Fund
+```{r warning=FALSE}
+
+# get some ETFs
+mystocks = c("IBDC", "SHV", "ZROZ", "SHY")
+myprices = getSymbols(mystocks, from = "2014-07-01")
+
+# adjust for dividends and splits
+for(ticker in mystocks) {
+	expr = paste0(ticker, "a = adjustOHLC(", ticker, ")")
+	eval(parse(text=expr))
+}
+
+
+# Combine all the returns in a matrix
+all_returns = cbind(	ClCl(IBDC),
+								ClCl(SHV),
+								ClCl(ZROZ),
+								ClCl(SHY))
+
+all_returns = as.matrix(na.omit(all_returns))
+```
+
+
+
+```{r}
+# Now simulate many different possible scenarios  
+initial_wealth = 100000
+set.seed(1)
+sim1 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.25, 0.25, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+
+# 5% VaR: z = 1.65
+VaR = mean(sim1[,n_days]) - 1.65*sd(sim1[,n_days]) # 97844.47
+```
+
+
+
+### Portfolio 2 - Growth
+Equities:
+
+VOO: Vanguard S&P 500 ETF
+
+IWR: iShares Russell Midcap ETF
+
+
+Bonds:
+
+LQD: iShares iBoxx $ Investment Grade Corporate Bond ETF
+
+VCSH: Vanguard Short-Term Corporate Bond ETF
+```{r, warning=FALSE, results="hide", message = FALSE}
+
+# get some ETFs
+mystocks2 = c("VOO", "IWR", "LQD", "VCSH")
+myprices2 = getSymbols(mystocks2, from = "2014-07-01")
+
+# adjust for dividends and splits
+for(ticker in mystocks2) {
+	expr = paste0(ticker, "a = adjustOHLC(", ticker, ")")
+	eval(parse(text=expr))
+}
+
+
+# Combine all the returns in a matrix
+all_returns2 = cbind(	ClCl(VOO),
+								ClCl(IWR),
+								ClCl(LQD),
+								ClCl(VCSH))
+
+all_returns2 = as.matrix(na.omit(all_returns2))
+```
+
+
+
+```{r}
+# Now simulate many different possible scenarios  
+initial_wealth = 100000
+set.seed(1)
+sim2 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.25, 0.25, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns2, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+
+# 5% VaR: z = 1.65
+VaR2 = mean(sim2[,n_days]) - 1.65*sd(sim2[,n_days]) # 97126.34
+```
+
+
+### Porfolio 3: Aggressive
+Equities:
+
+DWAQ: Invesco DWA NASDAQ Momentum ETF
+
+GREK: Global X FTSE Greece 20 ETF
+
+XSMO: Invesco S&P SmallCap Momentum ETF
+
+
+High yield bond:
+
+ANGL: iShares iBoxx $ Investment Grade Corporate Bond ETF
+```{r, warning=FALSE, results="hide", message = FALSE}
+
+# get some ETFs
+mystocks3 = c("DWAQ", "GREK", "XSMO", "ANGL")
+myprices3 = getSymbols(mystocks3, from = "2014-07-01")
+
+# adjust for dividends and splits
+for(ticker in mystocks3) {
+	expr = paste0(ticker, "a = adjustOHLC(", ticker, ")")
+	eval(parse(text=expr))
+}
+
+
+# Combine all the returns in a matrix
+all_returns3 = cbind(	ClCl(DWAQ),
+								ClCl(GREK),
+								ClCl(XSMO),
+								ClCl(ANGL))
+
+all_returns3 = as.matrix(na.omit(all_returns3))
+```
+
+
+
+```{r}
+# Now simulate many different possible scenarios  
+initial_wealth = 100000
+set.seed(1)
+sim3 = foreach(i=1:5000, .combine='rbind') %do% {
+	total_wealth = initial_wealth
+	weights = c(0.25, 0.25, 0.25, 0.25)
+	holdings = weights * total_wealth
+	n_days = 20
+	wealthtracker = rep(0, n_days)
+	for(today in 1:n_days) {
+		return.today = resample(all_returns3, 1, orig.ids=FALSE)
+		holdings = holdings + holdings*return.today
+		total_wealth = sum(holdings)
+		wealthtracker[today] = total_wealth
+	}
+	wealthtracker
+}
+
+# 5% VaR: z = 1.65
+VaR3 = mean(sim3[,n_days]) - 1.65*sd(sim3[,n_days]) # 92680.96
+```
+
+### Summary
+We constructed our portfolio based on risk affordability of three types of investors. Each portfolio has four equally weighted and well-performed ETFs that have positive returns in recent years.
+
+The first is a safe one that invests in money market instruments and treasury bonds at different maturities. The 20-day 5% VaR is 97844.47.
+
+The second one is suitable for investors who are seeking for higher wealth growth. We chose four ETFs that invests in both equities and bonds. These ETFs allocate their assets in short-term bonds, investment grade bonds, midcap stocks, or passively follow the S&P 500 index. The 20-day 5% VaR is 97126.34.
+
+Our last portfolio is an aggressive one which invests in junk bond and small cap stocks. The 20-day 5% VaR is 92680.96.
+
+In conclusion, the risker the portfolio, the lower the 5% VaR will be.
+
+
+## 4. Market segmentation
+
+### Try 1: Clustering the users using all the labeled categories
+
+#### Center/scale the data
+```{r}
+rawdata = read.csv('data/social_marketing.csv')
+rownames(rawdata) = rawdata$X
+mydata = scale(na.omit(rawdata[,-1]), center=TRUE, scale=TRUE)
+mu = attr(mydata,"scaled:center")
+sigma = attr(mydata,"scaled:scale")
+```
+
+#### Elbow Method for finding the optimal number of clusters 
+```{r}
+set.seed(123)
+# Compute and plot wss for k = 2 to k = 15.
+k.max = 15
+wss = sapply(1:k.max, 
+              function(k){kmeans(mydata, k, nstart=50,iter.max = 15 )$tot.withinss})
+wss
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+#### Using k = 3
+```{r}
+clust = kmeans(mydata, 3, nstart=50)
+sort(clust$center[1,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[2,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[3,]*sigma + mu, decreasing = TRUE)[1:10]
+```
+
+#### Using k = 5
+```{r}
+clust = kmeans(mydata, 5, nstart=50)
+sort(clust$center[1,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[2,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[3,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[4,]*sigma + mu, decreasing = TRUE)[1:10]
+sort(clust$center[5,]*sigma + mu, decreasing = TRUE)[1:10]
+
+```
+
+### Try 2: Clustering the users using principal components of the labeled categories
+
+#### Determine number of components and calculate the scores of each components for all the users
+```{r}
+pca = prcomp(mydata)
+plot(cumsum(pca$sdev^2 / sum(pca$sdev^2)))
+summary(pca)
+score = pca$x[,1:18]
+pca$rotation[,1:3]
+```
+
+#### Elbow Method for finding the optimal number of clusters
+```{r}
+set.seed(321)
+# Compute and plot wss for k = 2 to k = 15.
+k.max = 15
+wss = sapply(1:k.max, 
+              function(k){kmeans(score, k, nstart=50,iter.max = 15 )$tot.withinss})
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+```
+
+#### Using k = 3
+```{r}
+clust2 = kmeans(score, 5, nstart=50)
+sort(clust2$center[1,],decreasing = TRUE)
+sort(clust2$center[2,],decreasing = TRUE)
+sort(clust2$center[3,],decreasing = TRUE)
+sort(clust2$center[4,],decreasing = TRUE)
+sort(clust2$center[5,],decreasing = TRUE)
+
+```
+
+
+## 5. Author Attribution
+
+```{r echo = FALSE, message = FALSE}
+rm(list=ls())
+library(tm) 
+library(magrittr)
+library(slam)
+library(proxy)
+
+```
+
+### (1) Read in all the text files and put them into traning and test set.
+
+```{r}
+readerPlain = function(fname){
+  readPlain(elem=list(content=readLines(fname)), 
+            id=fname, language='en') }
+
+train_filelist = Sys.glob('data/ReutersC50/C50train/*/*.txt')
+test_filelist = Sys.glob('data/ReutersC50/C50test/*/*.txt')
+train = lapply(train_filelist, readerPlain) 
+test = lapply(test_filelist, readerPlain) 
+
+```
+
+### (2) Save the author names in train and test set
+
+```{r}
+names_train = train_filelist %>%
+  { strsplit(., '/', fixed=TRUE) } %>%
+  { lapply(., tail, n=2) } %>%
+  { lapply(., head, n=1) } %>%
+  { lapply(., paste0, collapse = '') } %>%
+  unlist
+
+names_test = test_filelist %>%
+  { strsplit(., '/', fixed=TRUE) } %>%
+  { lapply(., tail, n=2) } %>%
+  { lapply(., head, n=1) } %>%
+  { lapply(., paste0, collapse = '') } %>%
+  unlist
+
+names(train) = names_train
+names(test) = names_test
+
+```
+
+
+### (3) Create "corpus" for text mining
+
+```{r}
+doc_train_raw = Corpus(VectorSource(train))
+doc_test_raw  = Corpus(VectorSource(test))
+
+```
+
+
+### (4) Pre-processing/tokenization of text (make everything lowercase, remove numbers, remove punctuation, remove exess white-space, remove stopwords).
+
+```{r}
+doc_train = doc_train_raw
+doc_train = tm_map(doc_train, content_transformer(tolower)) 
+doc_train = tm_map(doc_train, content_transformer(removeNumbers)) 
+doc_train = tm_map(doc_train, content_transformer(removePunctuation)) 
+doc_train = tm_map(doc_train, content_transformer(stripWhitespace)) 
+
+doc_test = doc_test_raw
+doc_test = tm_map(doc_test, content_transformer(tolower)) 
+doc_test = tm_map(doc_test, content_transformer(removeNumbers)) 
+doc_test = tm_map(doc_test, content_transformer(removePunctuation)) 
+doc_test = tm_map(doc_test, content_transformer(stripWhitespace)) 
+
+doc_train = tm_map(doc_train, content_transformer(removeWords), stopwords("en"))
+doc_test = tm_map(doc_test, content_transformer(removeWords), stopwords("en"))
+
+```
+
+
+### (5) Create two doc-term-matrix for train and test sets. We also convert word counts into IF-IDF scores.
+
+```{r}
+DTM_train = DocumentTermMatrix(doc_train, control = list(weighting = weightTfIdf))
+DTM_test = DocumentTermMatrix(doc_test, control = list(weighting = weightTfIdf))
+
+```
+
+
+### (6) Remove sparese terms, which are the words that have relatively low frequency
+
+```{r}
+DTM_train = removeSparseTerms(DTM_train, 0.98)
+DTM_test = removeSparseTerms(DTM_test, 0.98)
+
+```
+
+
+### (7) We use the intersect function to find words that are in both train and test set. This step uses words that only in both sets.
+
+```{r}
+DTM_train_dataFrame = as.data.frame(as.matrix(DTM_train))
+DTM_test_dataFrame = as.data.frame(as.matrix(DTM_test))
+
+intersection = intersect(names(DTM_train_dataFrame),names(DTM_test_dataFrame))
+DTM_train_dataFrame = DTM_train_dataFrame[,intersection]
+DTM_test_dataFrame = DTM_test_dataFrame[,intersection]
+
+```
+
+
+### (8) Add the author names columns to our train and test set
+
+```{r}
+author_train = factor(names(train))
+author_test = factor(names(test))
+
+X_train<-data.frame(DTM_train_dataFrame)
+X_train$author = author_train
+X_test<-data.frame(DTM_test_dataFrame)
+X_test$author = author_test
+
+```
+
+
+### (9) RandomForest
+
+```{r}
+set.seed(44)
+library(randomForest)
+rf.listing = randomForest(author ~ ., data = X_train,
+                          distribution = 'multinomial',
+                          n.trees=200, mtry = 80)
+rf.pred = data.frame(predict(rf.listing,newdata = X_test))
+compare_rf = data.frame(cbind(rf.pred,X_test$author))
+compare_rf$correct = compare_rf$predict.rf.listing..newdata...X_test. == compare_rf$X_test.author
+mean(compare_rf$correct)
+
+```
+
+Our RandomForest model gives us an accuracy of 61.6%.
+
+### (10) Naive Bayes 
+
+```{r}
+library(naivebayes)
+nb.listing = naive_bayes(author ~ ., data = X_train)
+nb.pred = data.frame(predict(nb.listing,X_test))
+compare_nb = data.frame(cbind(nb.pred,X_test$author))
+compare_nb$correct = compare_nb$predict.nb.listing..X_test. == compare_nb$X_test.author
+mean(compare_nb$correct)
+
+
+```
+
+Our Naive Bayes model gives us an accuracy of 51%, which is 10% lower than what we got from the randomforest model. 
+
+
+## 6. Association rule mining
+
+### (1) Load data
+```{r}
+library(arules)
+library(arulesViz)
+groceries = read.transactions('data/groceries.txt', sep=',')
+inspect(groceries[1:10])
+summary(itemFrequency(groceries))
+```
+
+### (2) rules
+```{r}
+groceriesrules = apriori(groceries, 
+	parameter=list(support=.003, confidence=.3, maxlen=5))
+plot(groceriesrules, measure = c("support", "lift"), shading = "confidence")
+plot(groceriesrules, method='two-key plot')
+inspect(subset(groceriesrules, subset=lift > 5))
+```
+
+### (3) Choose a subset
+```{r}
+subsetrules = subset(groceriesrules, subset=lift > 5)
+plot(subsetrules, method='graph')
+plot(head(subsetrules, 20, by='lift'), method='graph')
+```
