@@ -1089,7 +1089,3 @@ than what we got from the randomforest model.
     plot(subsetrules, method='graph')
 
 ![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-45-1.png)
-
-    plot(head(subsetrules, 20, by='lift'), method='graph')
-
-![](STA-380-Exercises_files/figure-markdown_strict/unnamed-chunk-45-2.png)
