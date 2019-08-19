@@ -783,5 +783,4 @@ inspect(subset(groceriesrules, subset=lift > 5))
 ```{r}
 subsetrules = subset(groceriesrules, subset=lift > 5)
 plot(subsetrules, method='graph')
-plot(head(subsetrules, 20, by='lift'), method='graph')
 ```
